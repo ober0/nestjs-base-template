@@ -8,6 +8,7 @@ import { RoleModule } from "../role/role.module";
 import { PermissionModule } from "../permission/permission.module";
 import { RolePermissionModule } from "../role-permission/role-permission.module";
 import { CryptModule } from "../crypt/crypt.module";
+import { RedisModule } from "../redis/redis.module";
 
 @Module({
     imports: [
@@ -18,7 +19,8 @@ import { CryptModule } from "../crypt/crypt.module";
         RoleModule,
         PermissionModule,
         RolePermissionModule,
-        CryptModule
+        CryptModule,
+        RedisModule
     ]
 })
 export class AppModule {}
