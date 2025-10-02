@@ -7,6 +7,7 @@ import { UserModule } from "../user/user.module";
 import { RoleModule } from "../role/role.module";
 import { PermissionModule } from "../permission/permission.module";
 import { RolePermissionModule } from "../role-permission/role-permission.module";
+import { CryptModule } from "../crypt/crypt.module";
 
 @Module({
     imports: [
@@ -16,7 +17,8 @@ import { RolePermissionModule } from "../role-permission/role-permission.module"
         AuthModule,
         RoleModule,
         PermissionModule,
-        RolePermissionModule
+        RolePermissionModule,
+        CryptModule
     ]
 })
 export class AppModule {}
