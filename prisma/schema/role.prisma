@@ -1,0 +1,30 @@
+model Permission {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  description     String
+  createdAt       DateTime         @default(now()) @map("created_at")
+  rolePermissions RolePermission[] @relation(map: "role_permission")
+
+  @@map("permission")
+}
+
+model Role {
+  id              Int              @id @default(autoincrement())
+  name            String           @unique
+  createdAt       DateTime         @default(now()) @map("created_at")
+  rolePermissions RolePermission[] @relation(map: "role_permission")
+  users           User[]
+
+  @@map("role")
+}
+
+model RolePermission {
+  roleId       Int        @map("role_id")
+  permissionId Int        @map("permission_id")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  @@id([roleId, permissionId])
+  @@map("role_permission")
+}

@@ -1,0 +1,24 @@
+model RefreshToken {
+  id     String @id @default(uuid())
+  token  String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId Int    @map("user_id")
+
+  @@map("refresh_token")
+}
+
+model User {
+  id        Int     @id @default(autoincrement())
+  username  String  @unique
+  password  String
+  firstName String  @map("first_name")
+  lastName  String  @map("last_name")
+  telegram  String?
+  email     String?
+
+  refreshToken RefreshToken[] @relation(map: "refresh_token")
+  role         Role           @relation(fields: [roleId], references: [id])
+  roleId       Int            @map("role_id")
+
+  @@map("user")
+}
