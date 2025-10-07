@@ -12,9 +12,9 @@ import { ConfigService } from "@nestjs/config";
 import * as jwt from "jsonwebtoken";
 import { UserService } from "../user/user.service";
 import { AuthRepository } from "./auth.repository";
-import { LoginDto, LoginResponseDto } from "./dto/login.dto";
+import { LoginDto } from "./dto/login.dto";
 import { UserResponseDto } from "../user/dto/response.dto";
-import { TokenBaseDto, TokenPayload } from "./dto/tokens.dto";
+import { GeneratedTokens, LoginResponseDto, TokenPayload } from "./dto/tokens.dto";
 import * as bcrypt from "bcrypt";
 
 @Injectable()
@@ -42,18 +42,14 @@ export class AuthService {
     }
 
     async comparePassword(password: string, hashedPassword: string): Promise<boolean> {
-        try {
-            return await bcrypt.compare(password, hashedPassword);
-        } catch {
-            throw new BadRequestException("Не удалось сравнить пароли");
-        }
+        return bcrypt.compare(password, hashedPassword);
     }
 
     async saveToken({ userId, refreshToken }: { userId: number; refreshToken: string }) {
         return this.authRepository.saveToken({ userId, refreshToken });
     }
 
-    async login(dto: LoginDto): Promise<LoginResponseDto> {
+    async login(dto: LoginDto): Promise<LoginResponseDto & { refreshToken: string }> {
         const user = await this.userService.findOneByUsernameWithPassword(dto.username);
         if (!user) {
             throw new ForbiddenException("Неверные авторизационные данные.");
@@ -80,19 +76,21 @@ export class AuthService {
     }
 
     async logout(refreshToken: string) {
-        const token = await this.authRepository.findByToken(refreshToken);
+        const token = await this.authRepository.findTokenByToken(refreshToken);
         if (!token) {
-            throw new ForbiddenException("Невалидный токен");
+            throw new ForbiddenException();
         }
         return this.authRepository.deleteToken(token.id);
     }
 
-    async refresh(refreshToken: string): Promise<TokenBaseDto> {
-        const tokenInDb = await this.authRepository.findByToken(refreshToken);
+    async refresh(refreshToken: string): Promise<GeneratedTokens> {
+        if (!refreshToken) {
+            throw new UnauthorizedException();
+        }
+        const tokenInDb = await this.authRepository.findTokenByToken(refreshToken);
         if (!tokenInDb) {
             throw new UnauthorizedException();
         }
-
         let decodedJwt: TokenPayload;
         try {
             decodedJwt = jwt.verify(tokenInDb.token, this.configService.get("JWT_REFRESH_SECRET")) as TokenPayload;
@@ -104,15 +102,13 @@ export class AuthService {
 
         const { refreshToken: newRefreshToken, accessToken } = this.generateTokens(user);
 
-        await Promise.all([
-            this.authRepository.deleteToken(tokenInDb.id),
-            this.authRepository.saveToken({ userId: user.id, refreshToken: newRefreshToken })
-        ]);
+        await this.authRepository.deleteToken(tokenInDb.id);
+        await this.authRepository.saveToken({ userId: user.id, refreshToken: newRefreshToken });
 
         return { refreshToken: newRefreshToken, accessToken };
     }
 
-    generateTokens(user: UserResponseDto): TokenBaseDto {
+    generateTokens(user: UserResponseDto): GeneratedTokens {
         const payload: TokenPayload = { id: user.id };
 
         const accessToken = jwt.sign(payload, this.configService.get("JWT_ACCESS_SECRET")!, {

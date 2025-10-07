@@ -1,9 +1,9 @@
 import { Body, Controller, HttpCode, HttpStatus, Post, Res } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
-import { LoginControllerResponseDto, LoginDto } from "./dto/login.dto";
+import { LoginDto } from "./dto/login.dto";
 import express from "express";
-import { RefreshResponseDto } from "./dto/tokens.dto";
+import { AccessTokenDto, LoginResponseDto } from "./dto/tokens.dto";
 
 @ApiTags("Auth")
 @Controller("auth")
@@ -13,11 +13,11 @@ export class AuthController {
     @ApiOperation({ summary: "Вход пользователя" })
     @HttpCode(HttpStatus.OK)
     @Post("login")
-    @ApiOkResponse({ type: LoginControllerResponseDto })
+    @ApiOkResponse({ type: LoginResponseDto })
     async login(
         @Body() loginDto: LoginDto,
         @Res({ passthrough: true }) response: express.Response
-    ): Promise<LoginControllerResponseDto> {
+    ): Promise<LoginResponseDto> {
         const data = await this.authService.login(loginDto);
 
         response.cookie("refreshToken", data.refreshToken, {
@@ -30,9 +30,10 @@ export class AuthController {
         response.cookie("accessToken", data.accessToken, {
             secure: true,
             sameSite: "none",
-            httpOnly: true,
+            httpOnly: false,
             maxAge: 1000 * 3600 // 1 час
         });
+
         return {
             accessToken: data.accessToken,
             user: data.user
@@ -41,13 +42,13 @@ export class AuthController {
 
     @ApiOperation({ summary: "Обновление токенов" })
     @ApiBody({ schema: { type: "object", properties: { refreshToken: { type: "string" } } } })
-    @ApiOkResponse({ type: RefreshResponseDto })
+    @ApiOkResponse({ type: AccessTokenDto })
     @HttpCode(HttpStatus.OK)
     @Post("refresh")
     async refresh(
         @Body("refreshToken") refreshToken: string,
         @Res({ passthrough: true }) response: express.Response
-    ): Promise<RefreshResponseDto> {
+    ): Promise<AccessTokenDto> {
         const data = await this.authService.refresh(refreshToken);
 
         response.cookie("refreshToken", data.refreshToken, {
@@ -60,7 +61,7 @@ export class AuthController {
         response.cookie("accessToken", data.accessToken, {
             secure: true,
             sameSite: "none",
-            httpOnly: true,
+            httpOnly: false,
             maxAge: 1000 * 3600 // 1 час
         });
 

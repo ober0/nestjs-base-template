@@ -1,12 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
-import { SaveToken } from "./dto/tokens.dto";
+import { RoleNames } from "@prisma/client";
+import { SaveTokenDto } from "./dto/tokens.dto";
 
 @Injectable()
 export class AuthRepository {
     constructor(private readonly prisma: PrismaService) {}
 
-    async saveToken(payload: SaveToken) {
+    async saveToken(payload: SaveTokenDto) {
         return this.prisma.refreshToken.create({
             data: {
                 user: { connect: { id: payload.userId } },
@@ -15,7 +16,7 @@ export class AuthRepository {
         });
     }
 
-    async findByToken(refreshToken: string) {
+    async findTokenByToken(refreshToken: string) {
         return this.prisma.refreshToken.findFirst({
             where: { token: refreshToken }
         });
@@ -30,6 +31,12 @@ export class AuthRepository {
     async findUserToken(userId: number) {
         return this.prisma.refreshToken.findFirst({
             where: { userId }
+        });
+    }
+
+    async findRoleByName(name: RoleNames) {
+        return this.prisma.role.findUnique({
+            where: { name }
         });
     }
 }

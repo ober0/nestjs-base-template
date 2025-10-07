@@ -1,6 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, RoleNames } from "@prisma/client";
 import * as bcrypt from "bcrypt";
-import { RoleNames } from "../../src/modules/role/enum/base-roles";
 
 const salt = process.env.SALT_ROUNDS;
 if (!salt) {
@@ -36,8 +35,6 @@ async function createAdmin(prisma: PrismaClient) {
         },
         create: {
             username,
-            firstName: "Администратор",
-            lastName: "Системы",
             password: passwordHash,
             role: {
                 connect: {

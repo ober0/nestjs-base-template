@@ -1,49 +1,94 @@
 import {
     BadRequestException,
-    ConflictException,
+    ForbiddenException,
     Injectable,
     InternalServerErrorException,
     NotFoundException
 } from "@nestjs/common";
-import { UserRepository } from "./user.repository";
-import { UserResponseDto, UserWithPasswordResponseDto } from "./dto/response.dto";
+import { UserResponseDto, UserSearchResponseDto } from "./dto/response.dto";
 import { UserCreateDto } from "./dto/create.dto";
+import { UserRepository } from "./user.repository";
 import * as bcrypt from "bcrypt";
-import { RoleNames } from "../role/enum/base-roles";
-import { RoleService } from "../role/role.service";
+import { RoleNames } from "@prisma/client";
+import { UserUpdateDto } from "./dto/update.dto";
+import { UserSearchDto } from "./dto/search.dto";
 
 @Injectable()
 export class UserService {
-    private readonly saltRounds = process.env.SALT_ROUNDS;
+    private readonly saltRounds: string | undefined = undefined;
 
-    constructor(
-        private readonly repository: UserRepository,
-        private readonly roleService: RoleService
-    ) {
+    constructor(private readonly repository: UserRepository) {
+        this.saltRounds = process.env.SALT_ROUNDS;
         if (!this.saltRounds) {
-            throw Error("Не указана SALT_ROUNDS в енвах");
+            throw new Error("SALT_ROUNDS не указан в енв");
         }
     }
 
-    async hashPassword(password: string): Promise<string> {
-        await this.validate(password);
-        return bcrypt.hash(password, Number(this.saltRounds));
+    async create(dto: UserCreateDto): Promise<UserResponseDto> {
+        const exist = await this.findOneByUsername(dto.username);
+        if (exist) {
+            throw new BadRequestException("Пользователь с таким логином уже существует");
+        }
+
+        const hashedPassword: string = await bcrypt.hash(dto.password, Number(this.saltRounds));
+
+        let roleId: number;
+        if (dto.roleId) {
+            const role = await this.repository.findRoleById(dto.roleId);
+            if (!role) {
+                throw new NotFoundException("Роль не найдена");
+            }
+            roleId = dto.roleId;
+        } else {
+            const baseRole = await this.repository.findRoleByName(RoleNames.User);
+            if (!baseRole) {
+                throw new InternalServerErrorException("Базовое расписание не создано");
+            }
+            roleId = baseRole.id;
+        }
+
+        return this.repository.create(
+            {
+                ...dto,
+                password: hashedPassword
+            },
+            roleId
+        );
     }
 
-    async validate(password: string): Promise<boolean> {
-        if (password.length < 8) {
-            throw new BadRequestException("Пароль должен содержать минимум 8 символов");
+    private async findOneByUsername(username: string) {
+        return this.repository.findOneByUsername(username);
+    }
+
+    async update(id: number, dto: UserUpdateDto, user: UserResponseDto): Promise<UserResponseDto> {
+        const exist = await this.findOneById(id);
+
+        if (user.role.name !== RoleNames.Admin) {
+            if (exist.id !== user.id) {
+                throw new ForbiddenException("Нет доступа");
+            }
         }
-        if (!/[a-z]/.test(password)) {
-            throw new BadRequestException("Пароль должен содержать хотя бы одну строчную букву");
+
+        if (dto.roleId) {
+            const role = await this.repository.findRoleById(dto.roleId);
+            if (!role) {
+                throw new NotFoundException("Роль не найдена");
+            }
         }
-        if (!/[A-Z]/.test(password)) {
-            throw new BadRequestException("Пароль должен содержать хотя бы одну заглавную букву");
+
+        return this.repository.update(id, dto);
+    }
+
+    async delete(id: number, user: UserResponseDto): Promise<UserResponseDto> {
+        const exist = await this.findOneById(id);
+
+        if (user.role.name !== RoleNames.Admin) {
+            if (exist.id !== user.id) {
+                throw new ForbiddenException("Нет доступа");
+            }
         }
-        if (!/\d/.test(password)) {
-            throw new BadRequestException("Пароль должен содержать хотя бы одну цифру");
-        }
-        return true;
+
+        return this.repository.delete(id);
     }
 
     async findOneById(id: number): Promise<UserResponseDto> {
@@ -54,49 +99,16 @@ export class UserService {
         return data;
     }
 
-    async findOneByUsername(username: string): Promise<UserResponseDto | null> {
-        return this.repository.findOneByUsername(username);
-    }
+    async search(dto: UserSearchDto): Promise<UserSearchResponseDto> {
+        const [data, count] = await Promise.all([this.repository.search(dto), this.repository.count(dto)]);
 
-    async create(dto: UserCreateDto): Promise<UserResponseDto> {
-        const user = await this.findOneByUsername(dto.username);
-        if (user) {
-            throw new ConflictException("Пользователь с таким username уже существует, попробуйте другое имя профиля.");
-        }
-
-        const hashedPassword = await this.hashPassword(dto.password);
-
-        const data = {
-            ...dto,
-            password: hashedPassword
+        return {
+            data,
+            count
         };
-        return this.repository.create(data);
     }
 
-    async findOneByUsernameWithPassword(username: string): Promise<UserWithPasswordResponseDto | null> {
-        return this.repository.findOneByUsernameWithPassword(username);
-    }
-
-    async register(dto: UserCreateDto): Promise<UserResponseDto> {
-        const isExists = await this.findOneByUsername(dto.username);
-        if (isExists) {
-            throw new BadRequestException("Пользователь с таким именем уже существует.");
-        }
-
-        let roleId: number;
-        if (!dto.roleId) {
-            const role = await this.roleService.findRoleByName(RoleNames.User);
-            if (!role) {
-                throw new InternalServerErrorException("Базовая роль не создана, обратитесь к администратору");
-            }
-            roleId = role.id;
-        } else {
-            roleId = dto.roleId;
-        }
-
-        return this.create({
-            ...dto,
-            roleId
-        });
+    async findOneByUsernameWithPassword(username: string): Promise<(UserResponseDto & { password: string }) | null> {
+        return this.repository.findOneByUsername(username);
     }
 }

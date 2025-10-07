@@ -1,35 +1,56 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseIntPipe, Patch, Post, UseGuards } from "@nestjs/common";
+import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { UserService } from "./user.service";
-import { ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiSecurity, ApiTags } from "@nestjs/swagger";
-import { JwtAuthGuardHttp } from "../auth/guards/auth.guard";
-import { DecodeUser } from "../auth/decorators/decode-user.decorator";
-import { UserResponseDto } from "./dto/response.dto";
-import { UserBaseDto } from "./dto/base.dto";
 import { UserCreateDto } from "./dto/create.dto";
-import { PermissionGuard } from "../role-permission/guards/permission.guard";
-import { HasPermissions } from "../role-permission/decorators/permissions.decorator";
-import { PermissionEnum } from "../permission/enum/permissions.enum";
+import { UserResponseDto, UserSearchResponseDto } from "./dto/response.dto";
+import { UserUpdateDto } from "./dto/update.dto";
+import { DecodeUser } from "../auth/decorators/decode-user";
+import { UserSearchDto } from "./dto/search.dto";
+import { UpsertUserCheckAccessGuard } from "./guards/check-access.guard";
 
-@ApiTags("User")
 @Controller("user")
-@ApiSecurity("bearer")
-@UseGuards(JwtAuthGuardHttp)
+@ApiTags("User")
 export class UserController {
     constructor(private readonly service: UserService) {}
 
     @ApiOperation({ summary: "Получить информацию о себе" })
-    @ApiOkResponse({ type: UserResponseDto })
     @Get("self")
-    async findOne(@DecodeUser() user: UserBaseDto): Promise<UserResponseDto> {
+    async self(@DecodeUser() user: UserResponseDto): Promise<UserResponseDto> {
         return this.service.findOneById(user.id);
     }
 
-    @ApiOperation({ summary: "Создание пользователя" })
-    @ApiCreatedResponse({ type: UserResponseDto })
     @Post()
-    @UseGuards(PermissionGuard)
-    @HasPermissions(PermissionEnum.CreateUser)
-    async create(@Body() registerDto: UserCreateDto): Promise<UserResponseDto> {
-        return this.service.register(registerDto);
+    @ApiOperation({ summary: "Создать пользователя" })
+    @ApiCreatedResponse({ type: UserResponseDto })
+    @UseGuards(UpsertUserCheckAccessGuard)
+    async create(@Body() dto: UserCreateDto): Promise<UserResponseDto> {
+        return this.service.create(dto);
+    }
+
+    @Delete(":id")
+    @ApiOperation({ summary: "Удалить пользователя" })
+    @ApiOkResponse({ type: UserResponseDto })
+    async delete(@Param("id", ParseIntPipe) id: number, @DecodeUser() user: UserResponseDto): Promise<UserResponseDto> {
+        return this.service.delete(id, user);
+    }
+
+    @Patch(":id")
+    @ApiOperation({ summary: "Обновить пользователя" })
+    @ApiOkResponse({ type: UserResponseDto })
+    @UseGuards(UpsertUserCheckAccessGuard)
+    async update(
+        @Param("id", ParseIntPipe) id: number,
+        @Body() dto: UserUpdateDto,
+        @DecodeUser() user: UserResponseDto
+    ): Promise<UserResponseDto> {
+        return this.service.update(id, dto, user);
+    }
+
+    @Post("search")
+    @ApiOperation({ summary: "Поиск пользователя" })
+    @ApiOkResponse({ type: UserSearchResponseDto })
+    @HttpCode(200)
+    async search(@Body() dto: UserSearchDto): Promise<UserSearchResponseDto> {
+        return this.service.search(dto);
     }
 }

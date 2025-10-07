@@ -1,16 +1,14 @@
-import { PrismaClient } from "@prisma/client";
-import * as bcrypt from "bcrypt";
-import { RoleNames } from "../../src/modules/role/enum/base-roles";
+import { PrismaClient, RoleNames } from "@prisma/client";
 
 export async function roleSeed(prisma: PrismaClient) {
     for (const name of Object.keys(RoleNames)) {
         await prisma.role.upsert({
             where: {
-                name
+                name: name as RoleNames
             },
             update: {},
             create: {
-                name
+                name: name as RoleNames
             }
         });
     }
