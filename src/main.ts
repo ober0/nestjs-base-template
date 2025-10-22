@@ -3,6 +3,8 @@ import { AppModule } from "./modules/app/app.module";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { ValidationPipe } from "@nestjs/common";
 import { NestExpressApplication } from "@nestjs/platform-express";
+import cookieParser from "cookie-parser";
+
 
 async function bootstrap() {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -10,6 +12,13 @@ async function bootstrap() {
 
     app.set("trust proxy", true);
     app.setGlobalPrefix("api");
+
+    app.use(cookieParser());
+
+    app.enableCors({
+        origin: true,
+        credentials: true
+    });
 
     app.useGlobalPipes(
         new ValidationPipe({

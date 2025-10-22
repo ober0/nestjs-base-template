@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Res } from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Post, Res, Req } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { LoginDto } from "./dto/login.dto";
@@ -41,14 +41,18 @@ export class AuthController {
     }
 
     @ApiOperation({ summary: "Обновление токенов" })
-    @ApiBody({ schema: { type: "object", properties: { refreshToken: { type: "string" } } } })
     @ApiOkResponse({ type: AccessTokenDto })
     @HttpCode(HttpStatus.OK)
     @Post("refresh")
     async refresh(
-        @Body("refreshToken") refreshToken: string,
+        @Req() request: express.Request
         @Res({ passthrough: true }) response: express.Response
     ): Promise<AccessTokenDto> {
+        const refreshToken = request.cookies["refreshToken"];
+        if (!refreshToken) {
+            throw new ForbiddenException("Refresh токен не найден");
+        }
+
         const data = await this.authService.refresh(refreshToken);
 
         response.cookie("refreshToken", data.refreshToken, {
@@ -71,11 +75,15 @@ export class AuthController {
     }
 
     @ApiOperation({ summary: "Выход пользователя" })
-    @ApiBody({ schema: { type: "object", properties: { refreshToken: { type: "string" } } } })
     @HttpCode(HttpStatus.OK)
     @ApiOkResponse()
     @Post("logout")
-    async logout(@Body("refreshToken") refreshToken: string): Promise<void> {
+    async logout(@Req() request: express.Request): Promise<void> {
+        const refreshToken = request.cookies["refreshToken"];
+        if (!refreshToken) {
+            throw new ForbiddenException("Refresh токен не найден");
+        }
+
         await this.authService.logout(refreshToken);
     }
 }

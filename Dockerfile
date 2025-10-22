@@ -22,7 +22,8 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /opt/app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build /opt/app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=build /opt/app/dist ./dist
+COPY --from=build /opt/app/dist/main.js ./dist/main.js
+COPY --from=build /opt/app/dist/prisma/seeds ./dist/prisma/seeds
 
 
 EXPOSE 3000
