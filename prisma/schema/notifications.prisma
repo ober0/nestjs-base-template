@@ -1,0 +1,28 @@
+model Notification {
+  uuid String @id @default(uuid()) @db.Uuid
+
+  type NotificationType
+
+  title          String
+  titleEng       String @map("title_eng")
+  description    String
+  descriptionEng String @map("description_eng")
+
+  isRead Boolean @default(false) @map("is_read")
+
+  user     User   @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  userUuid String @map("user_uuid") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("notification")
+}
+
+enum NotificationType {
+  CoefficientChanged
+  MatchStarted
+  RequestLimit
+
+  @@map("notification_type")
+}

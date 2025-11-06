@@ -1,0 +1,85 @@
+model Tariff {
+  uuid        String        @id @default(uuid()) @db.Uuid
+  name        String        @unique
+  description String?
+  prices      TariffPrice[] @relation(map: "prices")
+  limits      TariffLimit[] @relation(map: "limits")
+  userTariffs UserTariff[]  @relation(map: "user_tariffs")
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  @@map("tariff")
+}
+
+model TariffPrice {
+  uuid       String       @id @default(uuid()) @db.Uuid
+  tariff     Tariff       @relation(fields: [tariffUuid], references: [uuid], onDelete: Cascade)
+  tariffUuid String       @map("tariff_uuid") @db.Uuid
+  period     TariffPeriod @relation(fields: [periodUuid], references: [uuid])
+  periodUuid String       @map("period_uuid") @db.Uuid
+  price      Decimal      @db.Decimal(18, 2)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  @@unique([tariffUuid, periodUuid])
+  @@map("tariff_price")
+}
+
+model TariffLimit {
+  uuid        String  @id @default(uuid()) @db.Uuid
+  tariff      Tariff  @relation(fields: [tariffUuid], references: [uuid], onDelete: Cascade)
+  tariffUuid  String  @map("tariff_uuid") @db.Uuid
+  name        String
+  value       Int?
+  isUnlimited Boolean @default(false) @map("is_unlimited")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([tariffUuid, name])
+  @@map("tariff_limit")
+}
+
+model TariffPeriod {
+  uuid         String        @id @default(uuid()) @db.Uuid
+  days         Int           @unique
+  description  String
+  tariffPrices TariffPrice[] @relation(map: "tariff_prices")
+  userTariffs  UserTariff[]  @relation(map: "user_tariffs")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("tariff_period")
+}
+
+model UserTariff {
+  uuid             String       @id @default(uuid()) @db.Uuid
+  user             User         @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  userUuid         String       @map("user_uuid") @db.Uuid
+  tariff           Tariff       @relation(fields: [tariffUuid], references: [uuid])
+  tariffUuid       String       @map("tariff_uuid") @db.Uuid
+  status           TariffStatus @default(Active)
+  startDate        DateTime     @map("start_date")
+  endDate          DateTime     @map("end_date")
+  period           TariffPeriod @relation(fields: [tariffPeriodUuid], references: [uuid])
+  tariffPeriodUuid String       @map("tariff_period_uuid") @db.Uuid
+
+  payment     Payment? @relation(fields: [paymentUuid], references: [uuid])
+  paymentUuid String?  @unique @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index(status)
+  @@index([userUuid, tariffUuid, status])
+  @@map("user_tariff")
+}
+
+enum TariffStatus {
+  Active
+  Expired
+  Canceled
+
+  @@map("tariff_status")
+}

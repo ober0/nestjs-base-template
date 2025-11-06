@@ -1,0 +1,46 @@
+enum PaymentStatus {
+  Pending
+  Completed
+  Failed
+  Canceled
+
+  @@map("payment_status")
+}
+
+enum PaymentMethod {
+  Card
+  Crypto
+  Link
+  Other
+
+  @@map("payment_method")
+}
+
+enum Currency {
+  USD
+  EUR
+  RUB
+  AMD
+
+  @@map("currency")
+}
+
+model Payment {
+  uuid        String        @id @default(uuid()) @db.Uuid
+  user        User          @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  userUuid    String        @map("user_uuid") @db.Uuid
+  amount      Decimal       @db.Decimal(18, 2)
+  currency    Currency
+  description String?
+  externalId  String?
+  metadata    Json?
+  method      PaymentMethod
+  status      PaymentStatus @default(Pending)
+
+  userTariff UserTariff?
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("payment")
+}

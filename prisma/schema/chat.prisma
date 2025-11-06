@@ -1,0 +1,45 @@
+model Chat {
+  uuid     String    @id @default(uuid()) @db.Uuid
+  messages Message[]
+
+  forecasts    Forecast @relation(fields: [forecastUuid], references: [uuid], onDelete: Cascade)
+  forecastUuid String   @unique @map("forecast_uuid") @db.Uuid
+
+  match     Match  @relation(fields: [matchUuid], references: [uuid], onDelete: Cascade)
+  matchUuid String @map("match_uuid") @db.Uuid
+
+  user     User   @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  userUuid String @map("user_uuid") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("chat")
+}
+
+model Message {
+  uuid String @id @default(uuid()) @db.Uuid
+
+  chat     Chat   @relation(fields: [chatUuid], references: [uuid], onDelete: Cascade)
+  chatUuid String @map("chat_uuid") @db.Uuid
+
+  type MessageSenderType
+
+  author     User?   @relation(fields: [authorUuid], references: [uuid], onDelete: Cascade)
+  authorUuid String? @db.Uuid
+
+  text String
+  json Json?  @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("message")
+}
+
+enum MessageSenderType {
+  Ai
+  User
+
+  @@map("message_sender_type")
+}

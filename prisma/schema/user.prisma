@@ -1,0 +1,104 @@
+model RefreshToken {
+  uuid      String   @id @default(uuid()) @db.Uuid
+  token     String
+  userAgent String   @map("user_agent")
+  ip        String
+  expiresAt DateTime @map("expires_at")
+
+  user     User   @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  userUuid String @map("user_uuid") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_token")
+}
+
+model Password {
+  uuid String @id @default(uuid()) @db.Uuid
+
+  user     User   @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  userUuid String @unique @map("user_uuid") @db.Uuid
+
+  password String
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("password")
+}
+
+model Person {
+  uuid String @id @default(uuid()) @db.Uuid
+
+  firstName      String?  @map("first_name")
+  lastName       String?  @map("last_name")
+  dateOfBirthday DateTime @map("date_of_birthday")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User[]
+
+  @@map("person")
+}
+
+model User {
+  uuid        String    @id @default(uuid()) @db.Uuid
+  phoneNumber String?   @unique @map("phone_number")
+  password    Password?
+  nickname    String
+
+  person     Person @relation(fields: [personUuid], references: [uuid])
+  personUuid String @db.Uuid
+
+  email String? @unique
+
+  refreshToken RefreshToken[] @relation(map: "refresh_token")
+  role         Role           @relation(fields: [roleUuid], references: [uuid])
+  roleUuid     String         @map("role_uuid") @db.Uuid
+
+  userInfo   UserInfo?    @relation(map: "user_info")
+  settings   Settings?
+  userTariff UserTariff[] @relation(map: "user_tariff")
+
+  forecasts     Forecast[]
+  chats         Chat[]
+  notifications Notification[]
+  messages      Message[]
+
+  aiRequestUsage Int @default(0)
+
+  payment Payment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user")
+}
+
+model UserInfo {
+  uuid            String @id @default(uuid()) @db.Uuid
+  forecastCount   Int    @map("forecast_count")
+  accuracyPercent Int    @map("accuracy_percent")
+  profitPercent   Int    @map("profit_percent")
+
+  user     User   @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  userUuid String @unique @map("user_uuid") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_info")
+}
+
+model Settings {
+  uuid String @id @default(uuid()) @db.Uuid
+  json Json   @db.JsonB
+
+  user     User   @relation(fields: [userUuid], references: [uuid], onDelete: Cascade)
+  userUuid String @unique @map("user_uuid") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}

@@ -1,0 +1,80 @@
+model Sport {
+  uuid String @id @default(uuid()) @db.Uuid
+
+  name            Json     @default("{}") @db.JsonB
+  availableExodus Exodus[] @relation(map: "available_exodus")
+
+  matches Match[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("sport")
+}
+
+model Exodus {
+  uuid String @id @default(uuid()) @db.Uuid
+
+  name Json @db.JsonB
+
+  sport     Sport  @relation(fields: [sportUuid], references: [uuid], onDelete: Cascade)
+  sportUuid String @map("sport_uuid") @db.Uuid
+
+  odds      MatchOdds[]
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  @@unique([name, sportUuid])
+  @@map("exodus")
+}
+
+enum MatchStatus {
+  Scheduled
+  Live
+  Finished
+
+  @@map("match_status")
+}
+
+model Match {
+  uuid String @id @default(uuid()) @db.Uuid
+
+  sport     Sport  @relation(fields: [sportUuid], references: [uuid], onDelete: Cascade)
+  sportUuid String @map("sport_uuid") @db.Uuid
+
+  league      String
+  teamA       String  @map("team_a")
+  teamB       String  @map("team_b")
+  description String?
+
+  startTime DateTime @map("start_time")
+
+  odds          MatchOdds[]
+  forecastMatch ForecastMatch[] @relation(map: "forecast_match")
+  chats         Chat[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([teamA])
+  @@index([teamB])
+  @@map("match")
+}
+
+model MatchOdds {
+  uuid String @id @default(uuid()) @db.Uuid
+
+  match     Match  @relation(fields: [matchUuid], references: [uuid], onDelete: Cascade)
+  matchUuid String @map("match_uuid") @db.Uuid
+
+  exodus     Exodus @relation(fields: [exodusUuid], references: [uuid], onDelete: Cascade)
+  exodusUuid String @map("exodus_uuid") @db.Uuid
+
+  value Float
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([matchUuid, exodusUuid])
+  @@map("match_odds")
+}

@@ -1,0 +1,10 @@
+model ServiceSettings {
+  uuid String @id @default(uuid())
+
+  json Json @db.JsonB
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("service_settings")
+}

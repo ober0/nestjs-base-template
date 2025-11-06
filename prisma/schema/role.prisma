@@ -1,0 +1,32 @@
+model Permission {
+  uuid            String           @id @default(uuid()) @db.Uuid
+  name            String           @unique
+  description     String
+  createdAt       DateTime         @default(now()) @map("created_at")
+  rolePermissions RolePermission[] @relation(map: "role_permissions")
+
+  @@map("permission")
+}
+
+model Role {
+  uuid            String           @id @default(uuid()) @db.Uuid
+  name            String           @unique
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  rolePermissions RolePermission[] @relation(map: "role_permissions")
+  users           User[]
+
+  @@map("role")
+}
+
+model RolePermission {
+  roleUuid       String     @map("role_uuid") @db.Uuid
+  permissionUuid String     @map("permission_uuid") @db.Uuid
+  permission     Permission @relation(fields: [permissionUuid], references: [uuid], onDelete: Cascade)
+  role           Role       @relation(fields: [roleUuid], references: [uuid], onDelete: Cascade)
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  @@id([roleUuid, permissionUuid])
+  @@map("role_permission")
+}
