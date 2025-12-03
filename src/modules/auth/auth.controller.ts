@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Res, Req } from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Post, Res, Req, ForbiddenException } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { LoginDto } from "./dto/login.dto";
@@ -45,7 +45,7 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @Post("refresh")
     async refresh(
-        @Req() request: express.Request
+        @Req() request: express.Request,
         @Res({ passthrough: true }) response: express.Response
     ): Promise<AccessTokenDto> {
         const refreshToken = request.cookies["refreshToken"];
