@@ -1,7 +1,7 @@
 import { DateMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
 import { ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsOptional } from "class-validator";
+import { IsDate, IsOptional } from "class-validator";
 import { IsDateString } from "class-validator";
 import { Transform } from "class-transformer";
 import { IsNumber } from "class-validator";
@@ -9,6 +9,7 @@ import { NumberMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
 import { QueryBaseDto } from "@app/common-dto/base-query.dto";
 import { IntersectionType } from "@nestjs/swagger";
 import { PartialType } from "@nestjs/swagger";
+import { log } from "console";
 
 export function GenerateQueryDto<T extends object>(dto: new () => T) {
     class ModifiedDto {}
@@ -27,8 +28,8 @@ export function GenerateQueryDto<T extends object>(dto: new () => T) {
             ApiPropertyOptional({ type: Date })(ModifiedDto.prototype, `${key}[min]`);
             IsOptional()(ModifiedDto.prototype, `${key}[min]`);
             Type(() => Date)(ModifiedDto.prototype, `${key}[min]`);
-            IsDateString()(ModifiedDto.prototype, `${key}[min]`);
-            Transform(({ value }) => new Date(value))(ModifiedDto.prototype, `${key}[min]`);
+            IsDate()(ModifiedDto.prototype, `${key}[min]`);
+        
 
             Object.defineProperty(ModifiedDto.prototype, `${key}[max]`, {
                 value: undefined,
@@ -39,7 +40,7 @@ export function GenerateQueryDto<T extends object>(dto: new () => T) {
             ApiPropertyOptional({ type: Date })(ModifiedDto.prototype, `${key}[max]`);
             IsOptional()(ModifiedDto.prototype, `${key}[max]`);
             Type(() => Date)(ModifiedDto.prototype, `${key}[max]`);
-            IsDateString()(ModifiedDto.prototype, `${key}[max]`);
+            IsDate()(ModifiedDto.prototype, `${key}[max]`);
             Transform(({ value }) => new Date(value))(ModifiedDto.prototype, `${key}[max]`);
         } else if (propertyType === NumberMinMaxFilterDto) {
             Object.defineProperty(ModifiedDto.prototype, `${key}[min]`, {

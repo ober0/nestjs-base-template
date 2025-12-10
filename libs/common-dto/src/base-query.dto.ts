@@ -1,12 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsOptional, IsString } from "class-validator";
+import { IsNumber, IsOptional, IsString } from "class-validator";
 
 
 export class QueryBaseDto {
-    @ApiProperty()
+    @ApiProperty({type: Number})
+    @IsNumber()
     page: number;
 
-    @ApiProperty()
+    @ApiProperty({type: Number})
+    @IsNumber()
     take: number;
 
     @ApiProperty({
