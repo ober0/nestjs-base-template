@@ -1,7 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { ValidateNested, IsObject, IsOptional, IsString } from "class-validator";
 import { PaginationDto } from "./pagination.dto";
-import { Type } from "class-transformer";
+import { Transform, Type } from "class-transformer";
+
+
 
 export class SearchBaseDto<F, S> {
     @ValidateNested()

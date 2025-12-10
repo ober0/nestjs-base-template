@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Res, Req } from "@nestjs/common";
+import { Body, Controller, HttpCode, HttpStatus, Post, Res, Req, ForbiddenException } from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { ApiBody, ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { LoginControllerResponseDto, LoginDto } from "./dto/login.dto";
@@ -77,7 +77,7 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     @ApiOkResponse()
     @Post("logout")
-    async logout(@Req() request: express.Request,): Promise<void> {
+    async logout(@Req() request: express.Request): Promise<void> {
         const refreshToken = request.cookies["refreshToken"];
         if (!refreshToken) {
             throw new ForbiddenException("Refresh токен не найден");
