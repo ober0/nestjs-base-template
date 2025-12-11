@@ -41,7 +41,9 @@ export class UserController {
     @UseGuards(PermissionGuard)
     @ApiQuery({ type: UserQuerySearchDto })
     @HasPermissions(PermissionEnum.SearchUser)
-    async search(@SearchQuery(UserSearchDto, UserQuerySearchDto) dto: UserSearchDto): Promise<UserSearchResponseDto | void> {
+    async search(
+        @SearchQuery(UserSearchDto, UserQuerySearchDto) dto: UserSearchDto
+    ): Promise<UserSearchResponseDto | void> {
         console.log(dto);
     }
 }

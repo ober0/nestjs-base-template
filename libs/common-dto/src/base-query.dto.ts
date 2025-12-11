@@ -1,19 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNumber, IsOptional, IsString } from "class-validator";
-
+import { Transform } from "class-transformer";
 
 export class QueryBaseDto {
-    @ApiProperty({type: Number})
+    @ApiProperty({ type: Number })
     @IsNumber()
     page: number;
 
-    @ApiProperty({type: Number})
+    @ApiProperty({ type: Number })
     @IsNumber()
     take: number;
 
     @ApiProperty({
         required: false,
-        description: "Полнотекстовый поиск",
+        description: "Полнотекстовый поиск"
     })
     @IsOptional()
     @IsString()
@@ -25,8 +25,16 @@ export class QueryBaseDto {
         example: ["createdAt:desc"]
     })
     @IsOptional()
+    @Transform(({ value }) => {
+        if (Array.isArray(value)) {
+            return value;
+        } else {
+            const splited = value.replace(/,\s+/g, ",").split(",");
+            if (splited.length > 1) {
+                return splited;
+            }
+            return [value];
+        }
+    })
     sort?: string[];
 }
-
-
-

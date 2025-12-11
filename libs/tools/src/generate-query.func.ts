@@ -1,15 +1,13 @@
 import { DateMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
-import { ApiPropertyOptional } from "@nestjs/swagger";
+import { ApiPropertyOptional, PartialType } from "@nestjs/swagger";
 import { Type } from "class-transformer";
-import { IsDate, IsOptional } from "class-validator";
+import { IsDate, IsOptional, IsString, IsArray } from "class-validator";
 import { IsDateString } from "class-validator";
 import { Transform } from "class-transformer";
 import { IsNumber } from "class-validator";
 import { NumberMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
 import { QueryBaseDto } from "@app/common-dto/base-query.dto";
 import { IntersectionType } from "@nestjs/swagger";
-import { PartialType } from "@nestjs/swagger";
-import { log } from "console";
 
 export function GenerateQueryDto<T extends object>(dto: new () => T) {
     class ModifiedDto {}
@@ -29,7 +27,6 @@ export function GenerateQueryDto<T extends object>(dto: new () => T) {
             IsOptional()(ModifiedDto.prototype, `${key}[min]`);
             Type(() => Date)(ModifiedDto.prototype, `${key}[min]`);
             IsDate()(ModifiedDto.prototype, `${key}[min]`);
-        
 
             Object.defineProperty(ModifiedDto.prototype, `${key}[max]`, {
                 value: undefined,
@@ -65,6 +62,10 @@ export function GenerateQueryDto<T extends object>(dto: new () => T) {
             IsOptional()(ModifiedDto.prototype, `${key}[max]`);
             IsNumber()(ModifiedDto.prototype, `${key}[max]`);
         } else if (propertyType === Array) {
+            const swaggerMetadata = Reflect.getMetadata("swagger/apiModelProperties", dto.prototype, key);
+
+            const arrayType = swaggerMetadata.type ?? String;
+
             Object.defineProperty(ModifiedDto.prototype, key, {
                 value: undefined,
                 writable: true,
@@ -72,8 +73,38 @@ export function GenerateQueryDto<T extends object>(dto: new () => T) {
                 configurable: true
             });
             ApiPropertyOptional({ type: propertyType, example: ["valueHere"] })(ModifiedDto.prototype, key);
-            Type(() => Array<string>)(ModifiedDto.prototype, `${key}`);
+            Transform(({ value }) => {
+                if (Array.isArray(value)) {
+                    if (arrayType === Number) {
+                        return value.map((el) => {
+                            return parseInt(el);
+                        });
+                    }
+                    return value;
+                } else if (typeof value === "string") {
+                    const splited = value.replace(/,\s+/g, ",").split(",");
+                    if (splited.length > 1) {
+                        if (arrayType === Number) {
+                            return splited.map((el) => parseInt(el));
+                        }
+                        return splited;
+                    }
+                    if (arrayType === String) {
+                        return [value];
+                    }
+                    const numberValue = parseInt(value);
+                    return [numberValue];
+                }
+                return value;
+            })(ModifiedDto.prototype, key);
             IsOptional()(ModifiedDto.prototype, key);
+            IsArray()(ModifiedDto.prototype, key);
+
+            if (arrayType === Number) {
+                IsNumber({}, { each: true })(ModifiedDto.prototype, key);
+            } else if (arrayType === String) {
+                IsString({ each: true })(ModifiedDto.prototype, key);
+            }
         } else {
             Object.defineProperty(ModifiedDto.prototype, key, {
                 value: undefined,
@@ -83,6 +114,12 @@ export function GenerateQueryDto<T extends object>(dto: new () => T) {
             });
             ApiPropertyOptional({ type: propertyType })(ModifiedDto.prototype, key);
             IsOptional()(ModifiedDto.prototype, key);
+
+            if (propertyType === Number) {
+                IsNumber()(ModifiedDto.prototype, key);
+            } else if (propertyType === String) {
+                IsString()(ModifiedDto.prototype, key);
+            }
         }
     }
 

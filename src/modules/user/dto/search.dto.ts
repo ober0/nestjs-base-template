@@ -1,10 +1,10 @@
-import { ApiProperty, ApiPropertyOptional, IntersectionType, PartialType } from "@nestjs/swagger";
-import { IsArray, IsEmail, IsEnum, IsNumber, IsOptional, IsString, IsUUID, ValidateNested } from "class-validator";
-import { Transform, Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
 import { DateMinMaxFilterDto } from "@app/common-dto/min-max.filter.dto";
 import { SortTypes } from "@app/common-dto/sort-types.dto";
-import { SearchBaseDto } from "@app/common-dto/base-search.dto";
 import { GenerateQueryDto } from "@app/tools/generate-query.func";
+import { GenerateSearchDto } from "@app/common-dto/base-search.dto";
 
 export class UserFiltersDto {
     @ApiProperty()
@@ -28,7 +28,8 @@ export class UserFiltersDto {
         example: [1]
     })
     @IsOptional()
-    roleIds?: string[];
+    @IsNumber({}, { each: true })
+    roleIds?: number[];
 }
 
 export class UserSortDto {
@@ -43,7 +44,6 @@ export class UserSortDto {
     username?: SortTypes;
 }
 
-export class UserSearchDto extends SearchBaseDto<UserFiltersDto, UserSortDto> {}
+export class UserSearchDto extends GenerateSearchDto(UserFiltersDto, UserSortDto) {}
 
-export class UserQuerySearchDto extends GenerateQueryDto(UserFiltersDto) {
-}
+export class UserQuerySearchDto extends GenerateQueryDto(UserFiltersDto) {}
