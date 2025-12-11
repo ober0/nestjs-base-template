@@ -34,19 +34,18 @@ export class AuthController {
             maxAge: 1000 * 3600 // 1 час
         });
         return {
-            accessToken: data.accessToken,
             user: data.user
         };
     }
 
     @ApiOperation({ summary: "Обновление токенов" })
-    @ApiOkResponse({ type: RefreshResponseDto })
+    @ApiOkResponse()
     @HttpCode(HttpStatus.OK)
     @Post("refresh")
     async refresh(
         @Req() request: express.Request,
         @Res({ passthrough: true }) response: express.Response
-    ): Promise<RefreshResponseDto> {
+    ): Promise<void> {
         const refreshToken = request.cookies["refreshToken"];
         if (!refreshToken) {
             throw new ForbiddenException("Refresh токен не найден");
@@ -67,22 +66,24 @@ export class AuthController {
             httpOnly: true,
             maxAge: 1000 * 3600 // 1 час
         });
-
-        return {
-            accessToken: data.accessToken
-        };
     }
 
     @ApiOperation({ summary: "Выход пользователя" })
     @HttpCode(HttpStatus.OK)
     @ApiOkResponse()
     @Post("logout")
-    async logout(@Req() request: express.Request): Promise<void> {
+    async logout(
+        @Req() request: express.Request,
+        @Res({ passthrough: true }) response: express.Response
+    ): Promise<void> {
         const refreshToken = request.cookies["refreshToken"];
         if (!refreshToken) {
             throw new ForbiddenException("Refresh токен не найден");
         }
 
         await this.authService.logout(refreshToken);
+
+        response.clearCookie("refreshToken");
+        response.clearCookie("accessToken");
     }
 }

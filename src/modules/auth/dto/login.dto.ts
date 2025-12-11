@@ -23,4 +23,4 @@ export class LoginResponseDto extends TokenBaseDto {
     user: UserResponseDto;
 }
 
-export class LoginControllerResponseDto extends OmitType(LoginResponseDto, ["refreshToken"]) {}
+export class LoginControllerResponseDto extends OmitType(LoginResponseDto, ["refreshToken", "accessToken"]) {}

@@ -17,23 +17,15 @@ export class JwtAuthGuardHttp implements CanActivate {
         }
 
         const req = context.switchToHttp().getRequest();
-        const authHeader = req.headers?.authorization;
-        const token = this.extractToken(authHeader);
+        const token = req.cookies?.accessToken;
+
+        if (!token) {
+            throw new UnauthorizedException();
+        }
 
         const user: UserResponseDto = await getUserFromToken(token, this.configService, this.prismaService);
         req.user = user;
 
         return true;
-    }
-
-    private extractToken(header?: string): string {
-        if (!header) {
-            throw new UnauthorizedException("Пользователь не авторизован");
-        }
-        const parts = header.split(" ");
-        if (parts.length !== 2 || parts[0] !== "Bearer") {
-            throw new UnauthorizedException("Неверный формат токена");
-        }
-        return parts[1];
     }
 }
