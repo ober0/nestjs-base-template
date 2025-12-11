@@ -44,6 +44,6 @@ export class UserController {
     async search(
         @SearchQuery(UserSearchDto, UserQuerySearchDto) dto: UserSearchDto
     ): Promise<UserSearchResponseDto | void> {
-        console.log(dto);
+        return this.service.search(dto);
     }
 }

@@ -11,6 +11,7 @@ import { UserCreateDto } from "./dto/create.dto";
 import * as bcrypt from "bcrypt";
 import { RoleNames } from "../role/enum/base-roles";
 import { RoleService } from "../role/role.service";
+import { UserSearchDto } from "./dto/search.dto";
 
 @Injectable()
 export class UserService {
@@ -98,5 +99,14 @@ export class UserService {
             ...dto,
             roleId
         });
+    }
+
+    async search(dto: UserSearchDto) {
+        const [data, count] = await Promise.all([this.repository.search(dto), this.repository.count(dto)]);
+
+        return {
+            data,
+            count
+        };
     }
 }
